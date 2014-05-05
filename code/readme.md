@@ -1,4 +1,4 @@
-There are two type scripts
+There are two types of scripts
  * .py
    * sort.py: main program of parallel sorting, containing three sorting methods (radix sort, segment sort and default sort). Ex: `pyspark sort.py radix/segmet/default local input output`
      * default.py: default sort method
