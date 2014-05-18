@@ -19,7 +19,14 @@ def getSC(master, name):
              .setAppName(name)
              #.set("spark.executor.memory", "1g")
              )
-    return SparkContext(conf = conf)
+    sc = SparkContext(conf = conf)
+    
+    sc.addPyFile('default.py')
+    sc.addPyFile('segment.py')
+    sc.addPyFile('radix.py')
+    sc.addPyFile('partition.py')
+
+    return sc
 
 # select a sort method
 def sort(sort_name, reads, length=70):
