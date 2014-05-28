@@ -7,7 +7,7 @@ def transform(read):
         yield (read[i:],read[i-1:i] if i>0 else '$')
 
 # sort (suffix, preChar) tuples by suffix
-def defaultSort(reads):
+def defaultSort(reads, cores_num):
     suffixes = reads.flatMap(transform)
-    suffixes = suffixes.sortByKey().map(lambda (k,v):v)
+    suffixes = suffixes.sortByKey(True,cores_num).map(lambda (k,v):v)
     return suffixes

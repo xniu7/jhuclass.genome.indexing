@@ -29,31 +29,31 @@ def getSC(master, name):
     return sc
 
 # select a sort method
-def sort(sort_name, reads, length=70):
+def sort(sort_name, reads, cores_num, length=70):
     if (sort_name=='radix'):
         bwt = radixSort(reads)
     elif (sort_name=='segment'):
         bwt = segSort(reads)
     elif (sort_name=='partition'):
-        bwt = partitionSort(reads)
+        bwt = partitionSort(reads, cores_num)
     else:
-        bwt = defaultSort(reads)
+        bwt = defaultSort(reads, cores_num)
     return bwt
 
 if __name__ == "__main__":
-    if len(sys.argv) < 5:
-        print >> sys.stderr, "Usage: <sort> <master> <input> <output>"
+    if len(sys.argv) < 6:
+        print >> sys.stderr, "Usage: <sort> <master> <cores_num> <input> <output>"
         exit(-1)
     start_time = datetime.now()
     
-    sc = getSC(sys.argv[2], sys.argv[1]+sys.argv[3])
+    sc = getSC(sys.argv[2], sys.argv[1]+sys.argv[3]+sys.argv[4])
 
     # drop lines with '>'
-    reads = sc.textFile(sys.argv[3]).filter(lambda s: '>' not in s)
+    reads = sc.textFile(sys.argv[4],int(sys.argv[3])).filter(lambda s: '>' not in s)
     # sort suffixes
-    bwt = sort(sys.argv[1],reads)
+    bwt = sort(sys.argv[1],reads, int(sys.argv[3]))
     # output bwt
-    bwt.saveAsTextFile(sys.argv[4])
+    bwt.saveAsTextFile(sys.argv[5])
     # reverse bwt to reads
     #check(bwt, reads.count())
     

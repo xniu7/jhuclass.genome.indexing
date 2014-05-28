@@ -31,8 +31,8 @@ def sort((partition, suffixes)):
     yield ''.join([suffixes[pos][1] for pos in lsd])
 
 
-def partitionSort(reads):
+def partitionSort(reads,cores_num):
     suffixes = reads.flatMap(transform)
-    partitions = suffixes.groupByKey().sortByKey()
+    partitions = suffixes.groupByKey(cores_num).sortByKey(True,cores_num)
     bwt = partitions.flatMap(sort)
     return bwt
