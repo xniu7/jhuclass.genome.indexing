@@ -29,7 +29,7 @@ def getSC(master, name):
     return sc
 
 # select a sort method
-def sort(sort_name, reads, cores_num, length=70):
+def sort(sort_name, reads, cores_num):
     if (sort_name=='radix'):
         bwt = radixSort(reads)
     elif (sort_name=='segment'):
@@ -42,18 +42,24 @@ def sort(sort_name, reads, cores_num, length=70):
 
 if __name__ == "__main__":
     if len(sys.argv) < 6:
-        print >> sys.stderr, "Usage: <sort> <master> <cores_num> <input> <output>"
+        print >> sys.stderr, "Usage: <sort> <master> <threads_num> <input> <output>"
         exit(-1)
     start_time = datetime.now()
     
-    sc = getSC(sys.argv[2], sys.argv[1]+sys.argv[3]+sys.argv[4])
+    sort_method = sys.argv[1]
+    master_address = sys.argv[2]
+    threads_number = sys.argv[3]
+    input_path = sys.argv[4]
+    output_path = sys.argv[5]
+    
+    sc = getSC(master_address, sort_method+threads_number+input_path)
 
     # drop lines with '>'
-    reads = sc.textFile(sys.argv[4],int(sys.argv[3])).filter(lambda s: '>' not in s)
+    reads = sc.textFile(input_path,int(threads_number)).filter(lambda s: '>' not in s)
     # sort suffixes
-    bwt = sort(sys.argv[1],reads, int(sys.argv[3]))
+    bwt = sort(sort_method,reads, int(threads_number))
     # output bwt
-    bwt.saveAsTextFile(sys.argv[5])
+    bwt.saveAsTextFile(output_path)
     # reverse bwt to reads
     #check(bwt, reads.count())
     
