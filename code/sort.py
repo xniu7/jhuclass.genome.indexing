@@ -1,16 +1,11 @@
 import sys
-from bwt import reverseBwt
 from pyspark import SparkConf, SparkContext
+
+from bwt import reverseBwt
 from radix import radixSort
 from segment import segSort
 from default import defaultSort
 from partition import partitionSort
-from datetime import datetime
-
-# reverse bwt to original reads.
-def check(bwt, reads_num):
-    bwt = ''.join(bwt.collect())
-    print reverseBwt(bwt, reads_num).replace('$','\n')
     
 # config spark context, set master, name and memory size
 def getSC(master, name):
@@ -25,6 +20,7 @@ def getSC(master, name):
     sc.addPyFile('segment.py')
     sc.addPyFile('radix.py')
     sc.addPyFile('partition.py')
+    sc.addPyFile('bwt.py')
 
     return sc
 
@@ -44,13 +40,11 @@ def sort(sort_name, reads, threads_number):
 # because each line is independent during processing.
 # Thus we first collect RDD (RDD->List), then parallelize List (List->RDD)
 def getReads(lines, file_type):
-    #concatinate lines begin with '>'
     if file_type == 'fasta' :
-        # drop lines with '>'
-        #reads = lines.filter(lambda line: '>' not in line)
         reads = []
         read = ''
         lines = lines.collect()
+        #concatinate lines begin with '>'
         for line in lines : 
             if '>' not in line:
                 read += line
@@ -58,9 +52,8 @@ def getReads(lines, file_type):
                 if len(read)>0: reads.append(read) 
                 read = ''
         if len(read)>0: reads.append(read) 
-    #choose the second line of every four lines            
     elif file_type == 'fastq' :
-        # drop lines with '@' '+'
+        #choose the second line of every four lines
         reads = lines.collect()[1::4]
     else :
         reads = lines.collect()
@@ -70,8 +63,7 @@ if __name__ == "__main__":
     if len(sys.argv) < 7:
         print >> sys.stderr, "Usage: <sort> <master> <threads_num> <file_type> <input> <output>"
         exit(-1)
-    start_time = datetime.now()
-    
+            
     sort_method = sys.argv[1]
     master_address = sys.argv[2]
     threads_number = sys.argv[3]
@@ -90,8 +82,3 @@ if __name__ == "__main__":
     bwt = sort(sort_method,reads, int(threads_number))
     # output bwt
     bwt.saveAsTextFile(output_path)
-    # reverse bwt to reads
-    check(bwt, reads.count())
-    
-    finish_time = datetime.now()
-    print finish_time-start_time

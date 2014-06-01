@@ -1,3 +1,6 @@
+import sys
+from pyspark import SparkConf, SparkContext
+
 def rotations(t):
     ''' Return list of rotations of input string t '''
     tt = t * 2
@@ -60,9 +63,36 @@ def compareOriBwt(ori_path,bwt_path):
     if len(rep)==0: print 'Successfully transform!'
     else : print 'T-catransform error.'
     
+# reverse bwt to original reads.
+def check(bwt, reads_num):
+    bwt = ''.join(bwt.collect())
+    print reverseBwt(bwt, reads_num).replace('$','\n')
+    
+# config spark context, set master, name and memory size
+def getSC(master, name):
+    conf = (SparkConf()
+             .setMaster(master)
+             .setAppName(name)
+             #.set("spark.executor.memory", "1g")
+             )
+    sc = SparkContext(conf = conf)
+
+    return sc    
+    
 if __name__=="__main__":
-    t = 'abaaba$'
-    b = bwtViaBwm(t)
-    b = 'TTAAG$TAG$CAGG$'
-    reads = reverseBwt(b,3).replace('$','\n')
-    compareOriBwt("/Users/niuxiang/Dropbox/documents/classes/fsda/project/data/input","/Users/niuxiang/Dropbox/documents/classes/fsda/project/data/output")
+    if len(sys.argv) < 4:
+        # pyspark bwt.py spark://xxx:7077 s3n://ss-reads/1k_output 1000
+        print >> sys.stderr, "Usage: <master> <bwt_path> <reads_num>"
+        exit(-1)
+    
+    master_address = sys.argv[1]
+    bwt_path = sys.argv[2] 
+    reads_num = int(sys.argv[3])
+    
+    sc = getSC(master_address, 'reverse bwt: '+bwt_path)
+    
+    #sequencial
+    bwt = sc.textFile(bwt_path,1)
+
+    check(bwt, reads_num)
+    
