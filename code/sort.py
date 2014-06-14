@@ -1,6 +1,8 @@
 import sys
 from pyspark import SparkConf, SparkContext
 
+import re
+
 from bwt import reverseBwt
 from radix import radixSort
 from segment import segSort
@@ -25,21 +27,21 @@ def getSC(master, name):
     return sc
 
 # select a sort method
-def sort(sort_name, reads, threads_number):
+def sort(sort_name, reads, threads_number, output_path):
     if (sort_name=='radix'):
         bwt = radixSort(reads)
     elif (sort_name=='segment'):
         bwt = segSort(reads)
     elif (sort_name=='partition'):
-        bwt = partitionSort(reads, threads_number)
+        bwt = partitionSort(reads, threads_number, output_path)
     else:
-        bwt = defaultSort(reads, threads_number)
+        bwt = defaultSort(reads, threads_number, output_path)
     return bwt
 
 # RDD does not support communications among lines, 
 # because each line is independent during processing.
 # Thus we first collect RDD (RDD->List), then parallelize List (List->RDD)
-def getReads(lines, file_type):
+def collectReads(lines, file_type):
     if file_type == 'fasta' :
         reads = []
         read = ''
@@ -58,10 +60,32 @@ def getReads(lines, file_type):
     else :
         reads = lines.collect()
     return reads
+    
+def filterReads(lines, file_type):
+    if file_type == 'fasta' :
+        reads = lines.filter(lambda line: '>' not in line)
+    elif file_type == 'fastq' :
+        reads = lines.filter(lambda line: re.match('^[ACGTN]*$', line))
+    else :
+        reads = lines
+    return reads
+    
+def getReads(lines, file_type, collect, reads_output_path):
+    if collect:
+        # collect RDD (RDD->List)
+        reads = collectReads(lines,file_type)
+        # parallelize List (List->RDD)
+        reads = sc.parallelize(reads,int(threads_number))
+    else :
+        reads = filterReads(lines,file_type)
+        
+    # output reads
+    # reads.saveAsTextFile(reads_output_path)
+    return reads
 
 if __name__ == "__main__":
-    if len(sys.argv) < 7:
-        print >> sys.stderr, "Usage: <sort> <master> <threads_num> <file_type> <input> <output>"
+    if len(sys.argv) < 8:
+        print >> sys.stderr, "Usage: <sort> <master> <threads_num> <file_type> <input> <reads_output_path> <bwt_output_path>"
         exit(-1)
             
     sort_method = sys.argv[1]
@@ -69,16 +93,14 @@ if __name__ == "__main__":
     threads_number = sys.argv[3]
     file_type = sys.argv[4]
     input_path = sys.argv[5]
-    output_path = sys.argv[6]
+    reads_output_path = sys.argv[6]
+    bwt_output_path = sys.argv[7]
     
     sc = getSC(master_address, sort_method+threads_number+input_path)
 
     lines = sc.textFile(input_path,int(threads_number))
-    # collect RDD (RDD->List)
-    reads = getReads(lines,file_type)
-    # parallelize List (List->RDD)
-    reads = sc.parallelize(reads,int(threads_number))
+
+    reads = getReads(lines,file_type, False, reads_output_path) 
+    
     # sort suffixes
-    bwt = sort(sort_method,reads, int(threads_number))
-    # output bwt
-    bwt.saveAsTextFile(output_path)
+    bwt = sort(sort_method,reads, int(threads_number), bwt_output_path)
