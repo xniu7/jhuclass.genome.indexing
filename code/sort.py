@@ -27,15 +27,15 @@ def getSC(master, name):
     return sc
 
 # select a sort method
-def sort(sort_name, reads, threads_number, output_path):
+def sort(sort_name, reads, threads_number, output_path, prefixes):
     if (sort_name=='radix'):
         bwt = radixSort(reads)
     elif (sort_name=='segment'):
         bwt = segSort(reads)
     elif (sort_name=='partition'):
-        bwt = partitionSort(reads, threads_number, output_path)
+        bwt = partitionSort(reads, threads_number, output_path, prefixes)
     else:
-        bwt = defaultSort(reads, threads_number, output_path)
+        bwt = defaultSort(reads, threads_number, output_path, prefixes)
     return bwt
 
 # RDD does not support communications among lines, 
@@ -84,8 +84,8 @@ def getReads(lines, file_type, collect, reads_output_path):
     return reads
 
 if __name__ == "__main__":
-    if len(sys.argv) < 8:
-        print >> sys.stderr, "Usage: <sort> <master> <threads_num> <file_type> <input> <reads_output_path> <bwt_output_path>"
+    if len(sys.argv) < 7:
+        print >> sys.stderr, "Usage: <sort> <master> <threads_num> <file_type> <input> <bwt_output_path>"
         exit(-1)
             
     sort_method = sys.argv[1]
@@ -93,8 +93,8 @@ if __name__ == "__main__":
     threads_number = sys.argv[3]
     file_type = sys.argv[4]
     input_path = sys.argv[5]
-    reads_output_path = sys.argv[6]
-    bwt_output_path = sys.argv[7]
+    reads_output_path = ""
+    bwt_output_path = sys.argv[6]
     
     sc = getSC(master_address, sort_method+threads_number+input_path)
 
@@ -102,5 +102,6 @@ if __name__ == "__main__":
 
     reads = getReads(lines,file_type, False, reads_output_path) 
     
+    prefixes = ['$','AA','CA','GA','NA','TA','AC','CC','GC','NC','TC','AG','CG','GG','NG','TG','AN','CN','GN','NN','TN','AT','CT','GT','NT','TT']
     # sort suffixes
-    bwt = sort(sort_method,reads, int(threads_number), bwt_output_path)
+    bwt = sort(sort_method,reads, int(threads_number), bwt_output_path, prefixes)

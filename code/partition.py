@@ -38,14 +38,16 @@ def sort((partition, suffixes)):
         
     yield '\n'.join([suffixes[pos][1] for pos in lsd])
 
-def partitionSort(reads,threads_num,output_path):
-    prefixes = ['$','A$','C$','G$','N$','T$','AA','CA','GA','NA','TA','AC','CC','GC','NC','TC','AG','CG','GG','NG','TG','AN','CN','GN','NN','TN','AT','CT','GT','NT','TT']
+def partitionSort(reads,threads_num,output_path,prefixes):
     #prefixes = '$ACGNT'
     for prefix in prefixes:
-        transform = generate_transform_func(prefix,10)
-        suffixes = reads.flatMap(transform)
-        partitions = suffixes.groupByKey(threads_num)
-        if partitions.count()>0:  partitions=partitions.sortByKey(True,threads_num)
-        bwt = partitions.flatMap(sort)
+        if '$' == prefix:
+            bwt = reads.map(lambda read:read[-1])
+        else:
+            transform = generate_transform_func(prefix,10)
+            suffixes = reads.flatMap(transform)
+            partitions = suffixes.groupByKey(threads_num)
+            partitions = partitions.sortByKey(True,threads_num)
+            bwt = partitions.flatMap(sort)
         bwt.saveAsTextFile(output_path+'/'+prefix)
     return 0

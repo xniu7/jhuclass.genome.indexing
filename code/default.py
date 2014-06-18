@@ -15,12 +15,14 @@ def generate_transform_func(prefix):
     return transform
 
 # sort (suffix, preChar) tuples by suffix
-def defaultSort(reads, threads_num, output_path):
-    prefixes = ['$','A$','C$','G$','N$','T$','AA','CA','GA','NA','TA','AC','CC','GC','NC','TC','AG','CG','GG','NG','TG','AN','CN','GN','NN','TN','AT','CT','GT','NT','TT']
+def defaultSort(reads, threads_num, output_path, prefixes):
     for prefix in prefixes:
-        transform = generate_transform_func(prefix)
-        suffixes = reads.flatMap(transform)
-        if suffixes.count()>0:  bwt = suffixes.sortByKey(True,threads_num).map(lambda (k,v):v)
-        else : bwt = suffixes.map(lambda (k,v):v)
+        if '$' == prefix:
+            bwt = reads.map(lambda read:read[-1])
+        else:
+            transform = generate_transform_func(prefix)
+            suffixes = reads.flatMap(transform)
+            suffixes = suffixes.sortByKey(True,threads_num)
+            bwt = suffixes.map(lambda (k,v):v)            
         bwt.saveAsTextFile(output_path+'/'+prefix)
     return 0
