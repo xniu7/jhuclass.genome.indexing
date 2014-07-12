@@ -1,6 +1,6 @@
 # create amazon credentials
-echo export AWS_SECRET_ACCESS_KEY=****** >> /root/spark/conf/spark-env.sh
-echo export AWS_ACCESS_KEY_ID=****** >> /root/spark/conf/spark-env.sh
+echo export AWS_SECRET_ACCESS_KEY=FdXzG6mR8KnGndNFBJSI5aFzYyuIyfqnyKpzbz/l >> /root/spark/conf/spark-env.sh
+echo export AWS_ACCESS_KEY_ID=AKIAIMZBLO52MKR3TOTQ >> /root/spark/conf/spark-env.sh
 
 # synchronize code and enviroment among master and slaves
 /root/spark-ec2/copy-dir /root/code/

@@ -15,6 +15,7 @@ def getSC(master, name):
              .setMaster(master)
              .setAppName(name)
              #.set("spark.executor.memory", "1g")
+             .set("spark.akka.frameSize", "512")
              )
     sc = SparkContext(conf = conf)
     
@@ -100,8 +101,9 @@ if __name__ == "__main__":
 
     lines = sc.textFile(input_path,int(threads_number))
 
-    reads = getReads(lines,file_type, False, reads_output_path) 
+    reads = getReads(lines,file_type, False, reads_output_path).cache()
     
-    prefixes = ['$','AA','CA','GA','NA','TA','AC','CC','GC','NC','TC','AG','CG','GG','NG','TG','AN','CN','GN','NN','TN','AT','CT','GT','NT','TT']
+    prefixes='$ACGNT'
+    #prefixes = ['$','AA','CA','GA','NA','TA','AC','CC','GC','NC','TC','AG','CG','GG','NG','TG','AN','CN','GN','NN','TN','AT','CT','GT','NT','TT']
     # sort suffixes
     bwt = sort(sort_method,reads, int(threads_number), bwt_output_path, prefixes)
