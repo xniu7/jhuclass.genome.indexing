@@ -1,0 +1,128 @@
+%
+% File naaclhlt2010.tex
+%
+% Contact: nasmith@cs.cmu.edu
+
+\documentclass[11pt,letterpaper]{article}
+\usepackage{times}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{latexsym}
+
+
+\title{BWT by Spark}
+
+\author{Xiang Niu\\
+  Johns Hopkins University\\
+  {\tt xniu7@jhu.edu}}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+\subsection{BWT}
+The Burrows–Wheeler transform (BWT) is an algorithm used in data compression techniques. When a character string is transformed by the BWT, none of its characters change value. The transformation permutes the order of the characters. For example, the BWT of ``abaaba\$'' is ``abba\$aa''.
+
+\subsection{Spark}
+In this project, we found spark is a good parallel tool and decide to use it to construct the BWT. Spark contains two kinds of operations, transformations and actions. Data will be processed only after an action is finished. In our project, we use several transfromations such as map, flatMap, filter, groupByKey, reduceByKey, sortByKey; and several actions such as reduce, collect, count, saveAsFile.
+
+\section{Parrallel Sort}
+We tried two parallel sorting methods, which is called default sort and partition sort.
+
+\subsection{Default Sort}
+\begin{itemize}
+	\item
+	parallel load text files.
+	\item
+	map each read to multiple suffixes by flatMap.
+	\item
+	sort suffixes by sortBykey.
+	\item
+	store the sorted value by saveAsFile.
+\end{itemize}
+
+\subsection{Partition Sort}
+\begin{itemize}
+	\item
+	parallel load text files.
+	\item
+	map each read to multiple suffixes by flatMap.
+	\item
+	partition suffixes by groupByKey.
+	\item
+	sort partitions by sortByKey.
+	\item
+	sort suffixes in each partition by radix sort.
+	\item
+	store the sorted value by saveAsFile.
+\end{itemize}
+
+\section{Result}
+We test and compare two kinds of sorting on amazon EC2. Our dataset includes 1M, 10M, 100M reads which stored in multiple text files in amazon S3. 
+
+\subsection{1M reads}
+At first, we sort 1M reads by default sort and test results on different machines. Table \ref{1M reads} shows that sorting 1M reads needs only several minutes. Besides, running on 10 machines needs almost the half time compared to 5 machines.
+\begin{table}
+	\caption{running time of 1M reads by default sort}
+	\label{1M reads}
+	\center
+	\begin{tabular}{|c|c|c|c|c|c|}
+		\hline
+		5 machines & m1.large & m1.xlarge & c1.xlarge & c3.4xlarge & c3.8xlarge \\ \hline
+    	sort & 360s & 102s & 75s & 43s & 29s \\ \hline
+		write & 336s & 120s & 66s & 28s & 19s \\ \hline
+		total & 696s & 222s & 141s & 71s & 48s \\ \hline
+		\hline
+		10 machines & m1.large & m1.xlarge & c1.xlarge & c3.4xlarge & c3.8xlarge \\ \hline
+    	sort & 132s & 48s & 46s & 26s & 7s \\ \hline
+		write & 192s & 60s & 30s & 15s & 11s \\ \hline
+		total & 324s & 108s & 76s & 41s & 18s \\ \hline
+	\end{tabular}
+\end{table}
+Table \ref{partition} shows that sorting 1M reads by default sort needs almost the half time compared to partition sort.
+\begin{table}
+	\caption{running time of 1M reads by default sort and partition sort}
+	\label{partition}
+	\center
+	\begin{tabular}{|c|c|c|}
+		\hline
+		 & default & partition \\ \hline
+    	5 machines & 11m & 20m \\ \hline
+		10 machines & 5m & 11m \\ \hline
+	\end{tabular}
+\end{table}
+
+\subsection{100M reads}
+Table \ref{100M reads} shows that sorting 100M reads by default sort needs only 50.00\$. Besides, there are two important things that we should consider during the sorting. 
+\begin{itemize}
+	\item
+	The memory of each instance. Unlike hadoop, spark use memory to run a program. In this case, we should make sure the program will not exceed memory in each instance. That's why we choose m2.2xlarge instance instead of m1.xlarge instance when dealing with 100M reads.
+	\item
+	The cpu of each instance. We could save more time by a faster cpu. However, there is a trade-off between speed and price. Pick a suitable cpu is also importance.
+\end{itemize}
+\begin{table}
+	\caption{running time of reads by default sort and partition}
+	\label{100M reads}
+	\center
+	\begin{tabular}{|c|c|c|c|}
+		\hline
+	     & 1M & 10M & 100M \\ \hline
+		instance & 10 m1.xlarge & 10 m1.xlarge & 10 m2.2xlarge \\ \hline
+    	cpu & 10x4 & 10x4 & 10x4 \\ \hline
+		memory & 10x15G & 10x15G & 10x35G \\ \hline
+		price & 10x0.35 & 10x0.35 & 10x0.49 \\ \hline
+		\hline
+		launch time & 15m & 15m & 15m \\ \hline
+		default sort & 4m & 2h & 10h \\ \hline
+		partition sort & 8m & $>$2h & $>$10h \\ \hline
+		cost of default sort & \$2.00 & \$8.00 & \$50.00 \\ \hline
+	\end{tabular}
+\end{table}
+
+\section{Conclusion}
+Constructing BWT by spark is feasible nowadays. For any individual researchers, they could pay for less than 100\$ to construct a BWT even for 100M reads. This method is economic and practical. 
+
+\end{document}
